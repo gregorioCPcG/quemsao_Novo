@@ -1,0 +1,255 @@
+---
+title: "Novo Brasil"
+author: "Gregorio ULSILVA"
+date: "05/01/2022"
+output: html_document
+---
+
+# Apoiadores do Novo e Eleitores de Amoedo em 2018: quem são e no que acreditam?
+
+
+
+```{r message=FALSE, warning=FALSE}
+options(scipen = 1000)
+library(sjPlot)
+library(coefplot)
+```
+
+```{r warning=FALSE}
+library(readxl)
+dados <- read_excel("merge.xlsx")
+dados$Novo <- as.factor(dados$Novo)
+dados$turno2 <- as.factor(dados$turno2)
+dados$turno2 <- relevel(dados$turno2, "N")
+dados$lavajato_combatecorrupcao <- as.factor(dados$lavajato_combatecorrupcao)
+dados$lavajato_combatecorrupcao <- relevel(dados$lavajato_combatecorrupcao, "NaoCombate")
+```
+
+O objetivo aqui é tentar determinar em que um apoiador do partido Novo se diferencia dos brasileiros em geral
+
+Base de dados: Eseb estudo pós-eleitoral brasileiro ocorrido logo após a eleição em 2018 ainda. 
+
+Se sente representado pelo partido Novo e/ou votou no Amoedo?
+
+```{r}
+table(dados$Novo)
+```
+
+
+# Análise 
+
+Novo = declarou votar no Amoedo e/ou gostar do Novo (50 de 2506 da amostra)
+
+analises previas - para verificar se há alguma relação, selecionamos algumas variáveis
+
+1- variáveis sociais
+
+escolaridade (em níveis)
+
+```{r}
+by(dados$escolaridade, dados$Novo, mean)
+```
+6 (Colegial incompleto) /	4(Ginásio incompleto)
+
+
+
+idade (em faixas)
+
+```{r}
+by(dados$faixa_idade, dados$Novo, mean)
+```
+
+os apoiadores do Novo são um pouco mais jovens 
+
+sexo (Feminino)
+
+```{r}
+table(dados$Feminino)
+by(dados$Feminino, dados$Novo, mean)# quantos porcento
+```
+
+Branco (auto declaração)
+
+```{r}
+table(dados$Branco)
+by(dados$Branco, dados$Novo, mean)# quantos porcento
+```
+
+localidade (Urbano?)
+
+
+```{r}
+table(dados$localidade)
+prop.table(table(dados$Novo, dados$localidade),1)# quantos porcento
+```
+
+2- variáveis políticas
+
+Voto segundo turno (Bolsonaro x Haddad/branco/nulo/naovotou)
+
+```{r}
+table(dados$turno2)
+```
+
+```{r}
+prop.table(table(dados$Novo, dados$turno2),1)# quantos porcento
+```
+
+
+AntiPt (Não gosta do PT x indiferente/gosta)
+
+```{r}
+table(dados$AntiPT)
+by(dados$AntiPT, dados$Novo, mean)# quantos porcento
+```
+
+
+Lava Jato combate a corrupção? (Combate x Não Combate)
+
+```{r}
+table(dados$lavajato_combatecorrupcao)
+prop.table(table(dados$Novo, dados$lavajato_combatecorrupcao),1)# quantos porcento
+```
+
+
+um resumo das variáveis:
+
+```{r}
+str(dados)
+```
+
+
+# Modelos variáveis sociais
+
+```{r}
+escolaridade <- glm(Novo ~ escolaridade, data = dados,
+               family=binomial(link=logit))
+tab_model(escolaridade, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+```{r}
+Feminino <- glm(Novo ~ Feminino, data = dados,
+             family=binomial(link=logit))
+tab_model(Feminino, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+```{r}
+Branco <- glm(Novo ~ Branco, data = dados,
+                family=binomial(link=logit))
+tab_model(Branco, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+```{r}
+URBANO <- glm(Novo ~ localidade, data = dados,
+             family=binomial(link=logit))
+tab_model(URBANO, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+só idade e escolaridade foram significativos
+
+```{r}
+demografia1 <- glm(Novo ~ escolaridade + faixa_idade, data = dados,
+                   family=binomial(link=logit))
+tab_model(demografia1, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+vamos testar com todos juntos
+
+```{r}
+demografia2 <- glm(Novo ~ escolaridade + faixa_idade + Branco + Feminino + localidade, data = dados,
+                      family=binomial(link=logit))
+tab_model(demografia2, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+```{r}
+coefplot(demografia2, intercept = FALSE)
+```
+
+```{r}
+tab_model(escolaridade, demografia1, demografia2, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+
+# Variáveis Políticas
+
+```{r}
+bolsonaro <- glm(Novo ~ turno2, data = dados,
+                 family=binomial(link=logit))
+tab_model(bolsonaro, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+```{r}
+antipt <- glm(Novo ~ AntiPT, data = dados,
+              family=binomial(link=logit))
+tab_model(antipt, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+
+```
+
+```{r}
+lavajato <- glm(Novo ~ lavajato_combatecorrupcao, data = dados,
+              family=binomial(link=logit))
+tab_model(lavajato, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+```{r}
+politico <- glm(Novo ~ AntiPT + lavajato_combatecorrupcao + turno2, data = dados,
+              family=binomial(link=logit))
+tab_model(politico, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+```{r}
+coefplot(politico, intercept = FALSE)
+```
+
+
+# Tudo junto e como interpretar os números
+
+```{r}
+completo <- glm(Novo ~ AntiPT + lavajato_combatecorrupcao + escolaridade, data = dados,
+            family=binomial(link=logit))
+tab_model(completo, show.ci = F, auto.label = T, show.se = T, collapse.se = T, 
+          wrap.labels = 60, p.style = "stars")
+```
+
+
+**Fórmula** = (odds-1)*100=prob%
+
+
+AntiPt
+```{r}
+(2.9-1)*100
+```
+Ser AntiPT aumenta as chances de se gostar do Novo e/ou  ter votado em Amoedo em 190%
+
+
+Lava-Jato
+```{r}
+(2.36-1)*100
+```
+ 
+Achar que a Lava Jato combate a corrupção aumenta as chances de se gostar do Novo e/ou ter votado em Amoedo em 136%
+
+
+escolaridade
+```{r}
+(1.35-1)*100
+```
+
+
+Um nível a mais de escolaridade aumenta(são nove) as chances de se gostar do Novo e/ou ter votado em Amoedo em 35%
+
+```{r}
+coefplot(completo, intercept = FALSE)
+```
+
